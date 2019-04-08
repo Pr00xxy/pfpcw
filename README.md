@@ -1,43 +1,46 @@
 # PFPCW
-Python full page cache warmer
+Python Full Page Cache Warmer
 
 ## Description
 
-This project aims to solve the problem of warming FPC enabled websites without building expensive warming solutions. Since sitemaps is indexed by SE crawlers and sitemaps contains public urls I saw it fit to base this warmer on sitemap content.
-This project was written as a standalone solution without ties to any existing web framework.
+Python cache warming tool used for warming full page cache solutions  
+by visting pages in sitemap.xml 
 
-Tests has been performed on 2 Wordpress sites and 2 Magento 1/2 sites.
+Has built-in support for concurrent threads, randomizing sort order, url parse delay, and more.
 
-### [!] Note from developer
-This project has been tested and can act a stress tester and in turn as a DOS tool.
-Im not taking any responsibility for the usage of this software. Please be a good person
+Tests has been performed on Wordpress, Magento 1 and 2.
 
 ## Installation
 
 ### Step 1. Prerequisites
             
-   - Python 3        
-   
-    pip install numpy bs4
+   - python3        
     
-### Step 2. 
-    
-## Options
+### Step 2. Download file from repo
 
-- `--sitemap`    Url to sitemap (Exclusive to `--site`)
-- `--site`       Url to site (Exclusive to `--sitemap`)
-                _Will scan robots.txt for any sitemaps and parse found ones_
-- `--threads`     Number of concurrent threads to use (Default: 1)
-- `--delay`       Delay in seconds between page parsings (Default: None)
-                _Useful when you don't want to stress the server to much_
-- `-v`            Run in verbose mode. Will print output to terminal
+* Check the [latest release](https://github.com/Pr00xxy/pfpcw/releases/latest) and download
+    
+## Parameters and flags
+
+- `--sitemap`   Url to sitemap (Exclusive to `--site`)
+- `--site`      Url to site (Exclusive to `--sitemap`)
+                _Will try to locate robots.txt for any sitemaps and parse found ones_
+- `--delay`     Delay in seconds between url warming (Default: 0)
+- `--limit`		Limit of urls to scan. (Default: None)
+- `--threads`   Number of concurrent threads to use (Default: 1)
+- `-r`			Randomize order of url warming. (Default: False)	
+- `-v`          Run in verbose mode. Will print output to terminal
+- `-s`			Run in silent mode. Redirects all output to /dev/null
 
 ## Usage
 
-You can either download the repo or run the latest version by using the following command
+    ./pfpcw ( --site <site url> | --sitemap <url to sitemap.xml> ) [--threads <int>] [--delay <int>] [--limit <int>] [-v] [-s] [-r]
+    
+or you can call the script like this directly from the repository (Stability not guaranteed). 
 
     python3 <(curl -sS https://raw.githubusercontent.com/Pr00xxy/pfpcw/master/pfpcw.py)
-
-### How to use
-
-    ./pfpcw ( --site <url 2 site> | --sitemap <url to sitemap.xml> ) [--threads <int>] [--delay <int>] [-v]s
+    
+### [!] Note from developer
+This software can act a stress tester and as a *denial of service* tool.  
+Im not taking any responsibility for the usage of this software.
+ 
