@@ -20,7 +20,7 @@ optional.add_argument('--site',     dest='site',    action='store',      default
 optional.add_argument('--delay',    dest='delay',   action='store',      default=0)
 optional.add_argument('--limit',    dest='limit',   action='store',      default=0)
 optional.add_argument('--threads',  dest='threads', action='store',      default=1)
-optional.add_argument('-r',         dest='random',  action='store_true',      default=False)
+optional.add_argument('-r',         dest='random',  action='store_true', default=False)
 optional.add_argument('-v',         dest='verbose', action='store_true', default=False)
 optional.add_argument('-s',         dest='silent',  action='store_true', default=False)
 args = parser.parse_args()
