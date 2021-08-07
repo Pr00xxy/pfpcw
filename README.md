@@ -32,7 +32,3 @@ Tests has been performed on Wordpress, Magento 1 and 2.
 ## Usage
 
 `./pfpcw ( --site <url> | --sitemap <url to sitemap.xml> ) [--threads <int>] [--delay <int>] [--limit <int>] [-v] [-s] [-r]`
-    
-or you can call the script like this directly from the repository (Stability not guaranteed). 
-
-`python3 <(curl -sS https://raw.githubusercontent.com/Pr00xxy/pfpcw/master/pfpcw.py)`
