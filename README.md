@@ -25,10 +25,12 @@ Tests has been performed on Wordpress, Magento 1 and 2.
 - `--delay`     Delay in seconds between url warming (Default: 0)
 - `--limit`		Limit of urls to scan. (Default: None)
 - `--threads`   Number of concurrent threads to use (Default: 1)
-- `-r`			Randomize order of url warming. (Default: False)	
+- `--username`  Login username. (Default: None)
+- `--password`  Login password. (Default: None)
+- `-r`			Randomize order of url warming. (Default: False)
 - `-v`          Run in verbose mode. Will print output to terminal
 - `-s`			Run in silent mode. Redirects all output to /dev/null
 
 ## Usage
 
-`./pfpcw ( --site <url> | --sitemap <url to sitemap.xml> ) [--threads <int>] [--delay <int>] [--limit <int>] [-v] [-s] [-r]`
+`./pfpcw ( --site <url> | --sitemap <url to sitemap.xml> ) [--threads <int>] [--delay <int>] [--limit <int>] [--username <email> --password <password>] [-v] [-s] [-r]`
