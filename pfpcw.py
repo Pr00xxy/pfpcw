@@ -11,18 +11,28 @@ import re
 import io
 import os
 
-parser = argparse.ArgumentParser(description='description')
-required = parser.add_argument_group('required arguments')
-optional = parser.add_argument_group('optional arguments')
+from pprint import pprint
+from urllib.parse import urlsplit
 
-optional.add_argument('--sitemap',  dest='sitemap', action='store',      default=None)
-optional.add_argument('--site',     dest='site',    action='store',      default=None)
-optional.add_argument('--delay',    dest='delay',   action='store',      default=0)
-optional.add_argument('--limit',    dest='limit',   action='store',      default=0)
-optional.add_argument('--threads',  dest='threads', action='store',      default=1)
-optional.add_argument('-r',         dest='random',  action='store_true', default=False)
-optional.add_argument('-v',         dest='verbose', action='store_true', default=False)
-optional.add_argument('-s',         dest='silent',  action='store_true', default=False)
+from bs4 import BeautifulSoup
+
+
+parser = argparse.ArgumentParser(description='description')
+
+required = parser.add_argument_group('required arguments')
+
+optional = parser.add_argument_group('optional arguments')
+optional.add_argument('--sitemap',  dest='sitemap',  action='store',      default=None)
+optional.add_argument('--site',     dest='site',     action='store',      default=None)
+optional.add_argument('--delay',    dest='delay',    action='store',      default=0)
+optional.add_argument('--limit',    dest='limit',    action='store',      default=0)
+optional.add_argument('--threads',  dest='threads',  action='store',      default=1)
+optional.add_argument('--username', dest='username', action='store',      default=None, required='--password' in sys.argv)
+optional.add_argument('--password', dest='password', action='store',      default=None, required='--username' in sys.argv)
+optional.add_argument('-r',         dest='random',   action='store_true', default=False)
+optional.add_argument('-v',         dest='verbose',  action='store_true', default=False)
+optional.add_argument('-s',         dest='silent',   action='store_true', default=False)
+
 args = parser.parse_args()
 
 
@@ -45,7 +55,9 @@ class CacheWarmer:
             silent=False,
             limit=None,
             random=False,
-            site=None
+            site=None,
+            username=None,
+            password=None,
     ):
         self.sitemap_url = sitemap_url
         self.delay = delay
@@ -55,6 +67,15 @@ class CacheWarmer:
         self.limit = limit
         self.random = random
         self.site = site
+        self.username = username
+        self.password = password
+
+        url_pieces = urlsplit(site or sitemap_url)
+        self.scheme = url_pieces.scheme
+        self.hostname = url_pieces.hostname
+        self.base_url = '{}://{}/'.format(self.scheme, self.hostname)
+
+        self.reqs = requests.Session()
 
     def run(self):
         """
@@ -67,6 +88,9 @@ class CacheWarmer:
         if self.silent is True:
             sys.stdout = os.devnull
             sys.stderr = os.devnull
+
+        if None not in {self.username, self.password}:
+            self._login()
 
         if self.sitemap_url:
             print('Downloading sitemap')
@@ -128,6 +152,48 @@ class CacheWarmer:
         self._run_post_test()
 
         sys.exit(0)
+
+    def _login(self):
+        print('Logging in ...')
+
+        account_url = self.base_url + 'customer/account/'
+        login_url = account_url + 'login/'
+
+        login_resp = self.reqs.get(login_url, headers={"user-agent": "PFPCW cache warming script"})
+        login_form = BeautifulSoup(login_resp.content, 'html.parser').find('form', {'id': 'login-form'})
+
+        login_form_url = login_form.get('action')
+        login_form_method = login_form.get('method')
+        login_form_key = login_form.find('input', {'name': 'form_key'}).get('value')
+
+        self.reqs.cookies.set('form_key', login_form_key)
+
+        login_form_resp = self.reqs.request(
+            method=login_form_method,
+            url=login_form_url,
+            data={
+                'form_key': login_form_key,
+                'login[username]': self.username,
+                'login[password]': self.password,
+            },
+            headers={
+                'content-type': 'application/x-www-form-urlencoded',
+                'user-agent': 'PFPCW cache warming script',
+            },
+        )
+
+        if len(login_form_resp.history) > 1 and login_form_resp.history[1].headers['location'] == login_url:
+            print('Error while trying to login', file=sys.stderr)
+            print('Request Headers:', file=sys.stderr)
+            for k, v in login_form_resp.request.headers.items():
+                print('    ' + k + ': ' + v, file=sys.stderr)
+            print('Response Headers:', file=sys.stderr)
+            for k, v in login_form_resp.history[0].headers.items():
+                print('    ' + k + ': ' + v, file=sys.stderr)
+            sys.exit(1)
+
+        logged_username = BeautifulSoup(login_form_resp.content, 'html.parser').find('div', {'class': 'name-expand-wrapper'}).text.strip()
+        print("Logged in as '{}'\n".format(logged_username))
 
     def _run_post_test(self):
         old_avg_download_time = self._get_avg_load_time()
@@ -200,7 +266,7 @@ class CacheWarmer:
         """
         if self._validate_link(link):
             try:
-                response = requests.get(link, headers={"user-agent": "PFPCW cache warming script"})
+                response = self.reqs.get(link, headers={"user-agent": "PFPCW cache warming script"})
                 if response.ok is True:
                     content = ''
 
@@ -339,6 +405,8 @@ cache_warmer = CacheWarmer(
     silent=args.silent,
     limit=int(args.limit),
     random=args.random,
-    site=args.site
+    site=args.site,
+    username=args.username,
+    password=args.password,
 )
 cache_warmer.run()
