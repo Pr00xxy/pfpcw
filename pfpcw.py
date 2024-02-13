@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env aython3
 from __future__ import print_function
 import threading
 import requests
@@ -15,14 +15,14 @@ parser = argparse.ArgumentParser(description='description')
 required = parser.add_argument_group('required arguments')
 optional = parser.add_argument_group('optional arguments')
 
-optional.add_argument('--sitemap',  dest='sitemap', action='store',      default=None)
-optional.add_argument('--site',     dest='site',    action='store',      default=None)
-optional.add_argument('--delay',    dest='delay',   action='store',      default=0)
-optional.add_argument('--limit',    dest='limit',   action='store',      default=0)
-optional.add_argument('--threads',  dest='threads', action='store',      default=1)
-optional.add_argument('-r',         dest='random',  action='store_true', default=False)
-optional.add_argument('-v',         dest='verbose', action='store_true', default=False)
-optional.add_argument('-s',         dest='silent',  action='store_true', default=False)
+optional.add_argument('--sitemap', dest='sitemap', action='store', default=None)
+optional.add_argument('--site', dest='site', action='store', default=None)
+optional.add_argument('--delay', dest='delay', action='store', default=0)
+optional.add_argument('--limit', dest='limit', action='store', default=0)
+optional.add_argument('--threads', dest='threads', action='store', default=1)
+optional.add_argument('-r', dest='random', action='store_true', default=False)
+optional.add_argument('-v', dest='verbose', action='store_true', default=False)
+optional.add_argument('-s', dest='silent', action='store_true', default=False)
 args = parser.parse_args()
 
 
@@ -64,14 +64,14 @@ class CacheWarmer:
 
         sitemap_content = ''
 
-        if self.silent is True:
+        if self.silent:
             sys.stdout = os.devnull
             sys.stderr = os.devnull
 
         if self.sitemap_url:
             print('Downloading sitemap')
             sitemap = self._download_link(self.sitemap_url)
-            if sitemap['code'] is 0:
+            if sitemap['code'] == 0:
                 sitemap_content = sitemap['content']
 
         if self.site:
@@ -82,10 +82,10 @@ class CacheWarmer:
 
         url_array = self._parse_sitemap(sitemap_content)
 
-        if self.random is True:
+        if self.random:
             random.shuffle(url_array)
 
-        if self.limit is not None and self.limit > 0:
+        if self.limit != None and self.limit > 0:
             del url_array[self.limit:]
 
         self.no_urls = len(url_array)
@@ -160,16 +160,22 @@ class CacheWarmer:
 
             try:
                 result = self._download_link(sitemap_url)['content']
-
                 if len(result) < 1:
                     buffer += '!'
                     failed_sitemaps.append(sitemap_url)
+
                 else:
-                    buffer += '.'
+                    if self.verbose:
+                        print('downloading part sitemap {0}: {1}'.format(idx, sitemap_url))
+                    else:
+                        buffer += '.'
 
                 print('\r' + buffer, end=' ')
 
                 sitemap_content += result
+
+                if self.delay > 0:
+                    time.sleep(float(self.delay))
             except TypeError:
                 print('Failed retrieving sitemap: {0}'.format(sitemap_url))
 
@@ -185,7 +191,7 @@ class CacheWarmer:
 
         sitemap_array = re.findall(r'(?:http|https):(?://)(?:[A-z0-9].{0,50})(?:|.xml.gz|.xml)', result['content'])
 
-        if sitemap_array is None:
+        if sitemap_array == None:
             return []
 
         return sitemap_array
@@ -201,7 +207,7 @@ class CacheWarmer:
         if self._validate_link(link):
             try:
                 response = requests.get(link, headers={"user-agent": "PFPCW cache warming script"})
-                if response.ok is True:
+                if response.ok:
                     content = ''
 
                     if '.xml.gz' in link:
@@ -254,8 +260,7 @@ class CacheWarmer:
 
         return out
 
-    @staticmethod
-    def _parse_sitemap(sitemap_xml):
+    def _parse_sitemap(self, sitemap_xml):
         """
         Return all occurrences of loc in sitemap.xml
 
@@ -264,6 +269,12 @@ class CacheWarmer:
         """
         if re.findall('<urlset .*>', sitemap_xml):
             return re.findall('<loc>(.*?)</loc>?', sitemap_xml)
+
+        if re.findall('<sitemap>', sitemap_xml):
+            sitemaps = re.findall('<loc>(.*?)</loc>?', sitemap_xml)
+            content = self._assemble_multiple_sitemap(sitemaps)
+            if re.findall('<urlset .*>', content):
+                return re.findall('<loc>(.*?)</loc>?', content)
 
         return ''
 
@@ -303,7 +314,7 @@ class CacheWarmer:
                 self.progress += 1
                 processed += 1
 
-                if self.thread_kill is True:
+                if self.thread_kill:
                     sys.exit(1)
 
                 if self.delay > 0:
@@ -312,15 +323,20 @@ class CacheWarmer:
                 start_time = time.time()
                 result = self._download_link(link)
 
-                if result['code'] is 0:
+                if result['code'] == 0:
                     self.load_times.append(time.time() - start_time)
 
-                if result['code'] is 1:
+                if result['code'] == 1:
                     self.url_err.append({'url': link, 'code': result['status_code']})
 
                 if self.verbose:
-                    print('({0}/{1}) {2} {3}'.format(self.progress, self.no_urls, '✓' if result['code'] is 0 else '×',
-                                                     link))
+                    print('({0}/{1}) {2} {3} {4}'.format(
+                        self.progress,
+                        self.no_urls,
+                        result['status_code'],
+                        '✓' if result['code'] == 0 else '×',
+                        link
+                    ))
             except Exception:
                 if self.verbose:
                     print('Failed warming link: {0}'.format(link))
